@@ -291,6 +291,7 @@ export default function useListbox ({ totalOptions, initialSelected }) {
     selected,
     isOpen,
     typeahead,
+    buttonIsFocused
   }
 }
 

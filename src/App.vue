@@ -6,6 +6,7 @@
     <button
       :ref="listbox.button()"
       class="rounded p-3 border"
+      :class="listbox.buttonIsFocused ? 'ring-4 ring-blue-600' : ''"
     >
       {{ options[listbox.selected] }}
     </button>
@@ -37,7 +38,7 @@
 </template>
 
 <script>
-import { readonly, computed, watch } from 'vue'
+import { readonly } from 'vue'
 import useListbox from './useListbox.js'
 
 export default {
@@ -58,11 +59,6 @@ export default {
             initialSelected: options.indexOf('The Ultimate Warrior'),
           })
 
-    watch(
-      () => listbox.typeahead,
-      () => console.log(listbox.typeahead)
-    )
-  
     return {
       options,
       listbox: readonly(listbox),
