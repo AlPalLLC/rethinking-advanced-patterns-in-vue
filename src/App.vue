@@ -1,5 +1,5 @@
 <template>
-  <div :ref="listbox.root()">
+  <div>
     <span :ref="listbox.label()">
       Select a wrestler:
     </span>
@@ -26,6 +26,7 @@
             fill="none"
             stroke="currentColor"
             v-show="index === listbox.selected"
+            style="height: 1em; width: 1em;"
           >
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
@@ -36,7 +37,7 @@
 </template>
 
 <script>
-import { readonly, computed } from 'vue'
+import { readonly, computed, watch } from 'vue'
 import useListbox from './useListbox.js'
 
 export default {
@@ -56,6 +57,11 @@ export default {
             totalOptions: options.length,
             initialSelected: options.indexOf('The Ultimate Warrior'),
           })
+
+    watch(
+      () => listbox.typeahead,
+      () => console.log(listbox.typeahead)
+    )
   
     return {
       options,
