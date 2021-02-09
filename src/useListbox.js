@@ -1,8 +1,10 @@
-import { ref, computed, unref, watch, onBeforeUpdate, nextTick } from 'vue'
+import { ref, computed, watch, onBeforeUpdate, onMounted, onUpdated, nextTick } from 'vue'
 import debounce from 'debounce'
 import { useBindings, useListeners, useConditionalDisplay } from '@baleada/vue-features/affordances'
 
-export default function useListbox ({ totalOptions, initialSelected }) {
+export default function useListbox (optional = {}) {
+  const { initialSelected = 0 } = optional
+
   // BOILERPLATE
   const button = useTarget('single'),
         list = useTarget('single'),
@@ -146,7 +148,7 @@ export default function useListbox ({ totalOptions, initialSelected }) {
           case 'ArrowUp': {
             e.preventDefault()
             
-            activate(active.value - 1 < 0 ? eachable.value.length - 1 : active.value - 1)
+            activate(active.value - 1 < 0 ? options.targets.value.length - 1 : active.value - 1)
 
             break
           }
@@ -154,7 +156,7 @@ export default function useListbox ({ totalOptions, initialSelected }) {
           case 'ArrowDown': {
             e.preventDefault()
             
-            activate(active.value + 1 > eachable.value.length - 1 ? 0 : active.value + 1)
+            activate(active.value + 1 > options.targets.value.length - 1 ? 0 : active.value + 1)
 
             break
           }
@@ -254,16 +256,13 @@ export default function useListbox ({ totalOptions, initialSelected }) {
     }
   })
 
-  const eachable = toEachable(totalOptions)
-  eachable.value.forEach(index => {
-    const id = generateId()
-    useBindings({
-      target: computed(() => options.targets.value[index]),
-      bindings: {
-        role: 'option',
-        id,
-      }
-    })
+  const ids = useIds(options.targets)
+  useBindings({
+    target: options.targets,
+    bindings: {
+      role: 'option',
+      id: ({ index }) => ids.value[index],
+    }
   })
 
 
@@ -295,7 +294,11 @@ export default function useListbox ({ totalOptions, initialSelected }) {
   }
 }
 
-function useTarget (type) {
+
+// UTIL
+function useTarget (type, options = {}) {
+  const { effect } = options
+
   switch (type) {
     case 'single': {
       const target = ref(null),
@@ -310,18 +313,22 @@ function useTarget (type) {
             }
 
       onBeforeUpdate(() => (targets.value = []))
+      
+      onMounted(() => effect?.())
+      onUpdated(() => effect?.())
 
       return { targets, handle }
     }
   } 
 }
 
-function toEachable (total) {
-  return computed(() => 
-    (new Array(unref(total)))
-      .fill()
-      .map((_, index) => index)
-  )
+function useIds (targets) {
+  const ids = ref(null),
+        effect = () => (ids.value = targets.value.map(() => generateId()))
+
+  onMounted(effect)
+
+  return ids
 }
 
 function isString (value) {

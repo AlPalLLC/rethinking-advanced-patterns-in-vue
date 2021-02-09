@@ -54,10 +54,7 @@ export default {
             'Bam Bam Bigelow',
             'Yokozuna',
           ],
-          listbox = useListbox({
-            totalOptions: options.length,
-            initialSelected: options.indexOf('The Ultimate Warrior'),
-          })
+          listbox = useListbox()
 
     return {
       options,
