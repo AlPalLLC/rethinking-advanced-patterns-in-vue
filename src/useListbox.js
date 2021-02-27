@@ -1,11 +1,12 @@
 import { ref, computed, watch, onBeforeUpdate, onMounted, onUpdated, nextTick } from 'vue'
 import debounce from 'debounce'
-import { useBindings, useListeners, useConditionalDisplay } from '@baleada/vue-features/affordances'
+import { bind, naiveOn as on, show } from '@baleada/vue-features/affordances'
+import { useTarget } from './util.js'
 
 export default function useListbox (optional = {}) {
   const { initialSelected = 0 } = optional
 
-  // BOILERPLATE
+  // TARGET SETUP
   const button = useTarget('single'),
         list = useTarget('single'),
         options = useTarget('multiple'),
@@ -16,16 +17,16 @@ export default function useListbox (optional = {}) {
   const selected = ref(initialSelected ?? 0),
         select = newSelected => (selected.value = newSelected)
 
-  useListeners({
+  on({
     target: options.targets,
-    listeners: {
+    events: {
       click: { targetClosure: ({ index }) => () => select(index) }
     }
   })
 
-  useListeners({
+  on({
     target: list.target,
-    listeners: {
+    events: {
       keydown (e) {
         switch (e.key) {
           case 'Spacebar':
@@ -47,9 +48,9 @@ export default function useListbox (optional = {}) {
     }
   })
 
-  useBindings({
+  bind({
     target: options.targets,
-    bindings: {
+    attributes: {
       ariaSelected: {
         targetClosure: ({ index }) => index === selected.value,
         watchSources: selected,
@@ -68,9 +69,9 @@ export default function useListbox (optional = {}) {
           typeahead.value = ''
         }, 500)
 
-  useListeners({
+  on({
     target: list.target,
-    listeners: {
+    events: {
       keydown: e => {
         if (!(isString(e.key) && e.key.length === 1)) {
           return
@@ -118,14 +119,14 @@ export default function useListbox (optional = {}) {
     }
   )
 
-  useBindings({
+  bind({
     target: list.target,
-    bindings: { ariaActivedescendant }
+    attributes: { ariaActivedescendant }
   })
 
-  useListeners({
+  on({
     target: options.targets,
-    listeners: {
+    events: {
       mouseenter: {
         targetClosure: ({ index }) => () => {
           if (active.value === index) {
@@ -138,9 +139,9 @@ export default function useListbox (optional = {}) {
     }
   })
   
-  useListeners({
+  on({
     target: list.target,
-    listeners: {
+    events: {
       mouseleave: ()  => (active.value = null),
       keydown: e => {
         switch (e.key) {
@@ -186,19 +187,19 @@ export default function useListbox (optional = {}) {
   
   watch(selected, close, { flush: 'post' })
 
-  useBindings({
+  bind({
     target: button.target,
-    bindings: { ariaExpanded: isOpen }
+    attributes: { ariaExpanded: isOpen }
   })
 
-  useListeners({
+  on({
     target: button.target,
-    listeners: { click: toggle }
+    events: { click: toggle }
   })
 
-  useListeners({
+  on({
     target: list.target,
-    listeners: {
+    events: {
       focusout (e) {
         if (e.relatedTarget === button.target.value) {
           return
@@ -218,7 +219,7 @@ export default function useListbox (optional = {}) {
     }
   })
 
-  useConditionalDisplay({
+  show({
     target: list.target,
     condition: isOpen,
   })
@@ -226,28 +227,28 @@ export default function useListbox (optional = {}) {
 
   // WAI ARIA BASICS
   const labelId = generateId()
-  useBindings({ target: label.target, bindings: { id: labelId } })
-  useBindings({
+  bind({ target: label.target, attributes: { id: labelId } })
+  bind({
     target: computed(() => [button.target.value, list.target.value]),
-    bindings: { ariaLabelledby: labelId }
+    attributes: { ariaLabelledby: labelId }
   })
 
-  useBindings({
+  bind({
     target: button.target,
-    bindings: {
+    attributes: {
       type: 'button',
       ariaHaspopup: 'listbox',
     }
   })
 
-  useBindings({
+  bind({
     target: list.target,
-    bindings: { tabindex: '-1', role: 'listbox' }
+    attributes: { tabindex: '-1', role: 'listbox' }
   })
 
-  useListeners({
+  on({
     target: list.target,
-    listeners: {
+    events: {
       keydown: e => {
         if (e.key === 'Tab') {
           e.preventDefault()
@@ -257,9 +258,9 @@ export default function useListbox (optional = {}) {
   })
 
   const ids = useIds(options.targets)
-  useBindings({
+  bind({
     target: options.targets,
-    bindings: {
+    attributes: {
       role: 'option',
       id: ({ index }) => ids.value[index],
     }
@@ -269,9 +270,9 @@ export default function useListbox (optional = {}) {
   // BUTTON FOCUS
   const buttonIsFocused = ref(false)
 
-  useListeners({
+  on({
     target: button.target,
-    listeners: {
+    events: {
       focus: () => (buttonIsFocused.value = true),
       blur: () => (buttonIsFocused.value = false),
     }
@@ -280,7 +281,7 @@ export default function useListbox (optional = {}) {
   button.handle.isFocused = buttonIsFocused
 
 
-  // BOILERPLATE
+  // API
   return {
     label: label.handle, 
     button: button.handle, 
@@ -296,30 +297,13 @@ export default function useListbox (optional = {}) {
 
 
 // UTIL
-function useTarget (type, options = {}) {
-  const { effect } = options
+function isString (value) {
+  return typeof value === 'string' || value instanceof String
+}
 
-  switch (type) {
-    case 'single': {
-      const target = ref(null),
-            handle = () => t => (target.value = t)
-
-      return { target, handle }
-    }
-    case 'multiple': {
-      const targets = ref([]),
-            handle = index => target => {
-              if (target) targets.value[index] = target
-            }
-
-      onBeforeUpdate(() => (targets.value = []))
-      
-      onMounted(() => effect?.())
-      onUpdated(() => effect?.())
-
-      return { targets, handle }
-    }
-  } 
+let id = 0
+function generateId(idPrefix = 'tailwind-ui-listbox-id-') {
+  return `${idPrefix}${++id}`
 }
 
 function useIds (targets) {
@@ -329,13 +313,4 @@ function useIds (targets) {
   onMounted(effect)
 
   return ids
-}
-
-function isString (value) {
-  return typeof value === 'string' || value instanceof String
-}
-
-let id = 0
-function generateId(idPrefix = 'tailwind-ui-listbox-id-') {
-  return `${idPrefix}${++id}`
 }

@@ -6,7 +6,9 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@baleada/vue-features": "^0.5.18",
+    "@baleada/logic": "^0.17.1",
+    "@baleada/vue-composition": "^0.8.17",
+    "@baleada/vue-features": "^0.7.3",
     "debounce": "^1.2.0",
     "vue": "^3.0.5"
   },

@@ -1,16 +1,34 @@
 <template>
   <div>
-    <span :ref="listbox.label()">
+    <h2>Tags:</h2>
+    <pre><code>{{ tagsJson }}</code></pre>
+    <h2>Tags input:</h2>
+    <div v-for="tag in tagsInput.tags">
+      <span>{{ tag }}</span>
+      <button
+        type="button"
+        @click="tagsInput.remove(tag)"
+      >
+        ×
+      </button>
+    </div>
+    <input
+      placeholder="Add tag..."
+      :ref="tagsInput.element"
+    />
+  </div>
+  <div>
+    <span :ref="listbox.label">
       Select a wrestler:
     </span>
     <button
-      :ref="listbox.button()"
+      :ref="listbox.button"
       class="rounded p-3 border"
       :class="listbox.buttonIsFocused ? 'ring-4 ring-blue-600' : ''"
     >
       {{ options[listbox.selected] }}
     </button>
-    <ul :ref="listbox.list()">
+    <ul :ref="listbox.list">
       <li
         v-for="(option, index) in options"
         :key="option"
@@ -38,8 +56,9 @@
 </template>
 
 <script>
-import { readonly } from 'vue'
+import { computed, readonly } from 'vue'
 import useListbox from './useListbox.js'
+import useTagsInput from './useTagsInput.js'
 
 export default {
   setup () {
@@ -54,11 +73,15 @@ export default {
             'Bam Bam Bigelow',
             'Yokozuna',
           ],
-          listbox = useListbox()
+          listbox = readonly(useListbox()),
+          tagsInput = readonly(useTagsInput()),
+          tagsJson = computed(() => JSON.stringify(tagsInput.tags, null, 2))
 
     return {
       options,
-      listbox: readonly(listbox),
+      listbox,
+      tagsInput,
+      tagsJson,
     }
   }      
 }
