@@ -1,88 +1,30 @@
 <template>
-  <div>
-    <h2>Tags:</h2>
-    <pre><code>{{ tagsJson }}</code></pre>
-    <h2>Tags input:</h2>
-    <div v-for="tag in tagsInput.tags">
-      <span>{{ tag }}</span>
-      <button
-        type="button"
-        @click="tagsInput.remove(tag)"
-      >
-        ×
-      </button>
-    </div>
-    <input
-      placeholder="Add tag..."
-      :ref="tagsInput.element"
-    />
-  </div>
-  <div>
-    <span :ref="listbox.label">
-      Select a wrestler:
-    </span>
-    <button
-      :ref="listbox.button"
-      class="rounded p-3 border"
-      :class="listbox.buttonIsFocused ? 'ring-4 ring-blue-600' : ''"
-    >
-      {{ options[listbox.selected] }}
-    </button>
-    <ul :ref="listbox.list">
-      <li
-        v-for="(option, index) in options"
-        :key="option"
-        :ref="listbox.options(index)"
-      >
-        <div 
-          class="p-3" 
-          :class="index === listbox.active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'"
-        >
-          <span>{{ option }}</span>
-          <!-- HeroiconsCheck -->
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            v-show="index === listbox.selected"
-            style="height: 1em; width: 1em;"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-      </li>
-    </ul>
-  </div>
+  <section class="flex flex-col items-center gap-16 text-blue-gray-400 p-8">
+    <h2 class="w-full max-w-lg  text-2xl text-primary-800">Live examples for Rethinking Advanced Patterns in Vue</h2>
+    <section class="flex flex-col gap-4 w-full max-w-lg">
+      <h2 class="uppercase font-semibold tracking-widest text-sm text-primary-800">Custom Tags Input</h2>
+      <section class="bg-primary-1100 shadow-lg rounded-md p-6 ">
+        <CustomTagsInput />
+      </section>
+    </section>
+    <section class="flex flex-col gap-4 w-full max-w-lg">
+      <h2 class="uppercase font-semibold tracking-widest text-sm text-primary-800">Custom Listbox</h2>
+      <section class="bg-primary-1100 shadow-lg rounded-md p-6 ">
+        <CustomListbox />
+      </section>
+    </section>
+  </section>
 </template>
 
 <script>
-import { computed, readonly } from 'vue'
-import useListbox from './useListbox.js'
-import useTagsInput from './useTagsInput.js'
+import CustomTagsInput from './CustomTagsInput.vue'
+import CustomListbox from './CustomListbox.vue'
 
 export default {
-  setup () {
-    const options = [
-            'The Ultimate Warrior',
-            'Randy Savage',
-            'Hulk Hogan',
-            'Bret Hart',
-            'The Undertaker',
-            'Mr. Perfect',
-            'Ted DiBiase',
-            'Bam Bam Bigelow',
-            'Yokozuna',
-          ],
-          listbox = readonly(useListbox()),
-          tagsInput = readonly(useTagsInput()),
-          tagsJson = computed(() => JSON.stringify(tagsInput.tags, null, 2))
-
-    return {
-      options,
-      listbox,
-      tagsInput,
-      tagsJson,
-    }
-  }      
+  components: {
+    CustomTagsInput,
+    CustomListbox,
+  }
 }
+
 </script>

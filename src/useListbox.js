@@ -1,4 +1,4 @@
-import { ref, computed, watch, onBeforeUpdate, onMounted, onUpdated, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import debounce from 'debounce'
 import { bind, naiveOn as on, show } from '@baleada/vue-features/affordances'
 import { useTarget } from './util.js'
@@ -177,12 +177,13 @@ export default function useListbox (optional = {}) {
     isOpen,
     () => {
       if (isOpen.value) {
-        nextTick(() => list.target.value.focus())
+        list.target.value.focus()
         return
       }
           
-      nextTick(() => button.target.value.focus())
+      button.target.value.focus()
     },
+    { flush: 'post' }
   )
   
   watch(selected, close, { flush: 'post' })
