@@ -29,18 +29,6 @@ export default function useTagsInput () {
     tags.value = [...tags.value, tag.value.trim()]
     nextTick(() => tag.value = '')
   }
-
-  on({
-    target: element.target,
-    events: {
-      keydown: event => {
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          add()
-        }
-      },
-    }
-  })
   
 
   // API

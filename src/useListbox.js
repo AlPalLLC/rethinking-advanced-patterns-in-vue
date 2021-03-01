@@ -15,7 +15,9 @@ export default function useListbox (optional = {}) {
 
   // SELECTED
   const selected = ref(initialSelected ?? 0),
-        select = newSelected => (selected.value = newSelected)
+        select = newSelected => (selected.value = newSelected),
+        selectedUpdates = ref(0),
+        forceSelectedUpdate = () => selectedUpdates.value++
 
   on({
     target: options.targets,
@@ -32,9 +34,15 @@ export default function useListbox (optional = {}) {
           case 'Spacebar':
           case ' ':
             e.preventDefault()
+            isOpenAgent.value = 'keyboard'
 
             if (typeahead.value !== '') {
               break
+            }
+
+            if (active.value === selected.value) {
+              forceSelectedUpdate()
+              return
             }
 
             select(active.value)
@@ -59,116 +67,9 @@ export default function useListbox (optional = {}) {
   })
 
 
-  // TYPEAHEAD
-  const typeahead = ref(''),
-        type = value => {
-          typeahead.value = typeahead.value + value
-          clearTypeahead()
-        },
-        clearTypeahead = debounce(() => {
-          typeahead.value = ''
-        }, 500)
-
-  on({
-    target: list.target,
-    events: {
-      keydown: e => {
-        if (!(isString(e.key) && e.key.length === 1)) {
-          return
-        }
-
-        e.preventDefault()
-
-        type(e.key)
-      }
-    }
-  })
-
-  // ACTIVE
-  const active = ref(null),
-        activate = newActive => active.value = newActive,
-        ariaActivedescendant = computed(() => options.targets.value[active.value]?.id || null)
-
-  watch(
-    active,
-    () => {
-      if (active.value === null) {
-        return
-      }
-
-      list.target.value.children[active.value]?.scrollIntoView({ block: 'nearest' })
-    },
-    { flush: 'post' }
-  )
-
-  watch(
-    () => typeahead.value,
-    () => {
-      if (typeahead.value === '') {
-        return
-      }
-
-      const match = options.targets.value.findIndex(target =>
-        target
-          .innerText
-          .toLowerCase()
-          .startsWith(typeahead.value.toLowerCase())
-      ) ?? null
-    
-      activate(match)
-    }
-  )
-
-  bind({
-    target: list.target,
-    attributes: { ariaActivedescendant }
-  })
-
-  on({
-    target: options.targets,
-    events: {
-      mouseenter: {
-        targetClosure: ({ index }) => () => {
-          if (active.value === index) {
-            return
-          }
-  
-          activate(index)
-        }
-      }
-    }
-  })
-  
-  on({
-    target: list.target,
-    events: {
-      mouseleave: ()  => (active.value = null),
-      keydown: e => {
-        switch (e.key) {
-          case 'Up':
-          case 'ArrowUp': {
-            e.preventDefault()
-            
-            activate(active.value - 1 < 0 ? options.targets.value.length - 1 : active.value - 1)
-
-            break
-          }
-          case 'Down':
-          case 'ArrowDown': {
-            e.preventDefault()
-            
-            activate(active.value + 1 > options.targets.value.length - 1 ? 0 : active.value + 1)
-
-            break
-          }
-        }
-      }
-    }
-  })
-  
-
   // OPEN/CLOSED
   const isOpen = ref(false),
+        isOpenAgent = ref('mouse'),
         toggle = () => isOpen.value ? close() : open(),
         open = () => (isOpen.value = true),
         close = () => (isOpen.value = false)
@@ -177,16 +78,15 @@ export default function useListbox (optional = {}) {
     isOpen,
     () => {
       if (isOpen.value) {
-        list.target.value.focus()
+        nextTick(() => list.target.value.focus())
         return
       }
           
-      button.target.value.focus()
+      nextTick(() => button.target.value.focus())
     },
-    { flush: 'post' }
   )
   
-  watch(selected, close, { flush: 'post' })
+  watch([selected, selectedUpdates], close, { flush: 'post' })
 
   bind({
     target: button.target,
@@ -195,7 +95,17 @@ export default function useListbox (optional = {}) {
 
   on({
     target: button.target,
-    events: { click: toggle }
+    events: {
+      click: () => {
+        // Spacebar keyup triggers click event after button is refocused
+        if (isOpenAgent.value !== 'mouse') {
+          isOpenAgent.value = 'mouse'
+          return
+        }
+        
+        toggle()
+      }
+    }
   })
 
   on({
@@ -206,6 +116,7 @@ export default function useListbox (optional = {}) {
           return
         }
 
+        isOpenAgent.value = 'focusout'
         close()
       },
       keydown (e) {
@@ -223,6 +134,126 @@ export default function useListbox (optional = {}) {
   show({
     target: list.target,
     condition: isOpen,
+  })
+
+
+  // TYPEAHEAD
+  const typeahead = ref(''),
+        type = value => {
+          typeahead.value = typeahead.value + value
+          clearTypeahead()
+        },
+        clearTypeahead = debounce(() => typeahead.value = '', 500)
+
+  on({
+    target: list.target,
+    events: {
+      keydown: e => {
+        if (!(isString(e.key) && e.key.length === 1)) {
+          return
+        }
+
+        e.preventDefault()
+
+        type(e.key)
+      }
+    }
+  })
+
+
+  // ACTIVE
+  const active = ref(selected.value),
+        activeChangeAgent = ref('none'),
+        activate = newActive => active.value = newActive,
+        ariaActivedescendant = computed(() => options.targets.value[active.value]?.id || null)
+
+  watch(
+    active,
+    () => list.target.value.children[active.value]?.scrollIntoView({ block: 'nearest' }),
+    { flush: 'post' }
+  )
+
+  watch(
+    () => typeahead.value,
+    () => {
+      if (typeahead.value === '') {
+        return
+      }
+
+      const match = options.targets.value.findIndex(target =>
+        target
+          .innerText
+          .toLowerCase()
+          .startsWith(typeahead.value.toLowerCase())
+      )
+    
+      if (match !== -1 && match !== active.value) {
+        activeChangeAgent.value = 'typeahead'
+        activate(match)
+      }
+    }
+  )
+
+  watch(
+    isOpen,
+    () => {
+      if (isOpen.value) {
+        active.value = selected.value
+      }
+    },
+  )
+
+  bind({
+    target: list.target,
+    attributes: { ariaActivedescendant }
+  })
+
+  on({
+    target: options.targets,
+    events: {
+      mouseenter: {
+        targetClosure: ({ index }) => () => {
+          if (activeChangeAgent.value !== 'mouseenter') {
+            activeChangeAgent.value = 'mouseenter'
+            return
+          }
+
+          if (active.value === index) {
+            return
+          }
+          
+          activate(index)
+        }
+      }
+    }
+  })
+  
+  on({
+    target: list.target,
+    events: {
+      keydown: e => {
+        switch (e.key) {
+          case 'Up':
+          case 'ArrowUp': {
+            e.preventDefault()
+            
+            activeChangeAgent.value = 'arrow'
+            activate(active.value - 1 < 0 ? options.targets.value.length - 1 : active.value - 1)
+
+            break
+          }
+          case 'Down':
+          case 'ArrowDown': {
+            e.preventDefault()
+            
+            activeChangeAgent.value = 'arrow'
+            activate(active.value + 1 > options.targets.value.length - 1 ? 0 : active.value + 1)
+
+            break
+          }
+        }
+      }
+    }
   })
 
 
