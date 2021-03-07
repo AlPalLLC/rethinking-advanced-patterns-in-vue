@@ -1,6 +1,6 @@
 import { ref, computed, nextTick } from 'vue'
 import { useTarget } from './util.js'
-import { naiveModel as model, naiveOn as on } from '@baleada/vue-features/affordances'
+import { naiveModel as model, naiveOn as on } from '@baleada/vue-features'
 
 export default function useTagsInput () {
   // TARGET SETUP
@@ -22,6 +22,7 @@ export default function useTagsInput () {
 
   // MULTIPLE CONCERNS
   const add = () => {
+    console.log('here')
     if (isEmpty.value || isDuplicate.value) {
       return
     }

@@ -1,6 +1,6 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import debounce from 'debounce'
-import { bind, naiveOn as on, show } from '@baleada/vue-features/affordances'
+import { bind, naiveOn as on, show } from '@baleada/vue-features'
 import { useTarget } from './util.js'
 
 export default function useListbox (optional = {}) {
@@ -58,7 +58,7 @@ export default function useListbox (optional = {}) {
 
   bind({
     target: options.targets,
-    attributes: {
+    keys: {
       ariaSelected: {
         targetClosure: ({ index }) => index === selected.value,
         watchSources: selected,
@@ -90,7 +90,7 @@ export default function useListbox (optional = {}) {
 
   bind({
     target: button.target,
-    attributes: { ariaExpanded: isOpen }
+    keys: { ariaExpanded: isOpen }
   })
 
   on({
@@ -165,10 +165,12 @@ export default function useListbox (optional = {}) {
   const active = ref(selected.value),
         activeChangeAgent = ref('none'),
         activate = newActive => active.value = newActive,
-        ariaActivedescendant = computed(() => options.targets.value[active.value]?.id || null)
+        ariaActivedescendant = computed(() => options.targets.value[active.value]?.id || null),
+        activeUpdates = ref(0),
+        forceActiveUpdate = () => activeUpdates.value++
 
   watch(
-    active,
+    [active, activeUpdates],
     () => list.target.value.children[active.value]?.scrollIntoView({ block: 'nearest' }),
     { flush: 'post' }
   )
@@ -198,6 +200,11 @@ export default function useListbox (optional = {}) {
     isOpen,
     () => {
       if (isOpen.value) {
+        if (active.value === selected.value) {
+          forceActiveUpdate()
+          return
+        }
+        
         active.value = selected.value
       }
     },
@@ -205,7 +212,7 @@ export default function useListbox (optional = {}) {
 
   bind({
     target: list.target,
-    attributes: { ariaActivedescendant }
+    keys: { ariaActivedescendant }
   })
 
   on({
@@ -259,15 +266,15 @@ export default function useListbox (optional = {}) {
 
   // WAI ARIA BASICS
   const labelId = generateId()
-  bind({ target: label.target, attributes: { id: labelId } })
+  bind({ target: label.target, keys: { id: labelId } })
   bind({
     target: computed(() => [button.target.value, list.target.value]),
-    attributes: { ariaLabelledby: labelId }
+    keys: { ariaLabelledby: labelId }
   })
 
   bind({
     target: button.target,
-    attributes: {
+    keys: {
       type: 'button',
       ariaHaspopup: 'listbox',
     }
@@ -275,7 +282,7 @@ export default function useListbox (optional = {}) {
 
   bind({
     target: list.target,
-    attributes: { tabindex: '-1', role: 'listbox' }
+    keys: { tabindex: '-1', role: 'listbox' }
   })
 
   on({
@@ -292,7 +299,7 @@ export default function useListbox (optional = {}) {
   const ids = useIds(options.targets)
   bind({
     target: options.targets,
-    attributes: {
+    keys: {
       role: 'option',
       id: ({ index }) => ids.value[index],
     }

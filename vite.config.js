@@ -2,9 +2,6 @@ const vue = require('@vitejs/plugin-vue')
 const { resolve } = require('path')
 
 module.exports = {
-  optimizeDeps: {
-    include: ['@baleada/vue-features/affordances']
-  },
   plugins: [
     vue()
   ],

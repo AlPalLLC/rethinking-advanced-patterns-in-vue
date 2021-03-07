@@ -43,24 +43,24 @@
       :ref="tagsInput.element"
       placeholder="Add a tag..."
       class="bg-primary-1000 p-2 w-36 rounded-sm shadow-md placeholder-primary-600"
-      @keydown.enter="add"
-      @keydown.backspace="() => remove(tags[tags.length - 1])"
+      @keydown.enter="tagsInput.add"
+      @keydown.backspace="() => tagsInput.remove(tagsInput.tags[tagsInput.tags.length - 1])"
     />
   </div>
 </template>
 
 <script>
-import { computed, readonly } from 'vue'
+import { readonly } from 'vue'
 import useTagsInput from './useTagsInput.js'
 
 export default {
   setup () {
-    const tagsInput = readonly(useTagsInput()),
-          tagsJson = computed(() => JSON.stringify(tagsInput.tags, null, 2))
+    const tagsInput = readonly(useTagsInput())
+
+    window.tagsInput = tagsInput
 
     return {
       tagsInput,
-      tagsJson,
     }
   }      
 }

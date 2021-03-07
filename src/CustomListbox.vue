@@ -1,5 +1,19 @@
 <template>
-  <section class="flex flex-col gap-2">
+  <section>
+    <h2 class="uppercase tracking-widest font-semibold text-primary-gray-400">Features</h2>
+    <ul class="mt-2 list-disc pl-4">
+      <li>Click the button to open the list, and transfer focus to the list.</li>
+      <li>Press <code class="text-primary-gray-200">Escape</code> to close the list and transer focus back to the button.</li>
+      <li>Click any list option to close the list and update the selected value. Or, use the up and down arrow keys to select an option, then hit <code class="text-primary-gray-200">Enter</code> or <code class="text-primary-gray-200">Spacebar</code> to select.</li>
+      <li>The active list option will be highlighted in blue, while the selected option will have a checkmark.</li>
+      <li>Entering your cursor into a new option will set that option as active.</li>
+      <li>When the list opens, the selected option is active and highlighted.</li>
+      <li>When the list is open, you can start typing, and the first matching option will be active. Typeahead is cleared every 500ms.</li>
+      <li>If the active option is not visible, it will be scrolled into view.</li>
+      <li>Lots of WAI-ARIA attributes are assigned automatically. Open devtools to explore!</li>
+    </ul>
+  </section>
+  <section class="mt-6 flex flex-col gap-2">
     <span :ref="listbox.label">
       Select a wrestler:
     </span>
